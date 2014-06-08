@@ -79,9 +79,6 @@ colorkey = b_p.get_at((0,0))
 b_p.set_colorkey(colorkey, RLEACCEL)
 
 def initialize_board():
-    """
-    initializes the board with all the pieces on their starting positions.
-    """
     pieces = []
     pieces.append(Piece.Piece([cols[0], lines[0]], w_r))
     pieces.append(Piece.Piece([cols[1], lines[0]], w_n))
@@ -118,9 +115,6 @@ def initialize_board():
     return pieces;
 
 def draw(pieces):
-    """
-    draws the board and all the pieces on the it. 
-    """
     canvas.fill(WHITE)
     canvas.blit(board_image, (0, 0))
         
@@ -131,9 +125,6 @@ def draw(pieces):
     fps_Clock.tick(60)
 
 def move_piece(pieces, origin, destination):
-    """
-    moves a piece from its "origin" position to the "destination" position.
-    """
     for piece in pieces:
         current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
         if current == destination:
@@ -146,18 +137,14 @@ def move_piece(pieces, origin, destination):
             break
 
 def game():
-    """
-    this function 'runs' the game- waits for a move, check if the move is legal and 
-    if it is legal updates the relevant pieces position. 
-    """
     pieces = initialize_board()
-    moveChecker = pexpect.spawn('...')
+    moveChecker = pexpect.spawn('/home/pi/Desktop/chessboard/Chess')
     selected = False
     origin_pos = [0, 0]
     done = False
     while not done:
         for event in pygame.event.get():
-            if event.type == QUIT:     
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):     
                 done = True
             if event.type == MOUSEBUTTONDOWN:
                 position = [event.pos[0] // SQUARE_SIZE, 7 - event.pos[1] // SQUARE_SIZE]
@@ -181,6 +168,5 @@ def game():
         draw(pieces)
         
     pygame.quit()
-    sys.exit()
     
 game()
