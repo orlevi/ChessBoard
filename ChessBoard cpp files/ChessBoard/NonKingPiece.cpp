@@ -363,7 +363,7 @@ void NonKingPiece::checkMoves()
 		fileDiff = checkingPiece.getFile() - king.getFile();
 		rankDiff = checkingPiece.getRank() - king.getRank();
 		/* the checking piece is a knight and it must be taken */
-		if ((fileDiff != 0) && (rankDiff != 0) && (fileDiff != rankDiff ))
+		if ((fileDiff != 0) && (rankDiff != 0) && (abs(fileDiff) != abs(rankDiff) ))
 		{
 			_checkMoves->push_front(Position(checkingPiece.getFile(), checkingPiece.getRank()));
 		}
