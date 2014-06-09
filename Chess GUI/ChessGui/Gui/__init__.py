@@ -87,7 +87,7 @@ def initialize_board():
     pieces.append(Piece.Piece([cols[1], lines[0]], w_n))
     pieces.append(Piece.Piece([cols[2], lines[0]], w_b))
     pieces.append(Piece.Piece([cols[3], lines[0]], w_q))
-    pieces.append(Piece.Piece([cols[4], lines[0]], w_k))
+    pieces.append(Piece.Piece([cols[4], lines[0]], w_k, True))
     pieces.append(Piece.Piece([cols[5], lines[0]], w_b))
     pieces.append(Piece.Piece([cols[6], lines[0]], w_n))
     pieces.append(Piece.Piece([cols[7], lines[0]], w_r))
@@ -103,7 +103,7 @@ def initialize_board():
     pieces.append(Piece.Piece([cols[1], lines[7]], b_n))
     pieces.append(Piece.Piece([cols[2], lines[7]], b_b))
     pieces.append(Piece.Piece([cols[3], lines[7]], b_q))
-    pieces.append(Piece.Piece([cols[4], lines[7]], b_k))
+    pieces.append(Piece.Piece([cols[4], lines[7]], b_k, True))
     pieces.append(Piece.Piece([cols[5], lines[7]], b_b))
     pieces.append(Piece.Piece([cols[6], lines[7]], b_n))
     pieces.append(Piece.Piece([cols[7], lines[7]], b_r))
@@ -144,6 +144,11 @@ def move_piece(pieces, origin, destination):
         current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
         if current == origin:
             piece.pos = [cols[destination[0]], lines[destination[1]]]
+            # handle castling moves
+            if piece.is_king and (destination[0] - origin[0]) == 2:
+                move_piece(pieces, [7 ,destination[1]],[destination[0] - 1, destination[1]])
+            elif piece.is_king and (destination[0] - origin[0]) == -2:
+                move_piece(pieces, [0 ,destination[1]],[destination[0] + 1, destination[1]])
             break
 
 def game():
@@ -152,7 +157,7 @@ def game():
     with the pexpect subprocess, and makes the moves on the board.
     """
     pieces = initialize_board()
-    moveChecker = pexpect.spawn('/home/pi/Desktop/chessboard/Chess')
+    moveChecker = pexpect.spawn('/home/pi/Desktop/Chess')
     selected = False
     origin_pos = [0, 0]
     done = False

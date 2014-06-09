@@ -11,12 +11,13 @@ class Piece():
     '''
     
 
-    def __init__(self, pos, image):
+    def __init__(self, pos, image, is_king = False):
         '''
         Constructor
         '''
         self.pos = pos
         self.image = image
+        self.is_king = is_king
         
     def draw(self, canvas):
         '''
