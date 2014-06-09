@@ -79,6 +79,9 @@ colorkey = b_p.get_at((0,0))
 b_p.set_colorkey(colorkey, RLEACCEL)
 
 def initialize_board():
+    """
+    places all 32 pieces in their initial positions.
+    """
     pieces = []
     pieces.append(Piece.Piece([cols[0], lines[0]], w_r))
     pieces.append(Piece.Piece([cols[1], lines[0]], w_n))
@@ -115,6 +118,9 @@ def initialize_board():
     return pieces;
 
 def draw(pieces):
+    """
+    draws the board and the pieces that are on it.
+    """
     canvas.fill(WHITE)
     canvas.blit(board_image, (0, 0))
         
@@ -125,6 +131,10 @@ def draw(pieces):
     fps_Clock.tick(60)
 
 def move_piece(pieces, origin, destination):
+    """
+    changes the location of a piece on the board. this function should be called 
+    only after the move was checked and found legal.
+    """
     for piece in pieces:
         current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
         if current == destination:
@@ -137,19 +147,28 @@ def move_piece(pieces, origin, destination):
             break
 
 def game():
+    """
+    this function handles the game. it waits to receive a move, checks if it is legal 
+    with the pexpect subprocess, and makes the moves on the board.
+    """
     pieces = initialize_board()
     moveChecker = pexpect.spawn('/home/pi/Desktop/chessboard/Chess')
     selected = False
     origin_pos = [0, 0]
     done = False
+    
     while not done:
         for event in pygame.event.get():
+            # exit if ESC pressed or 'x' clicked. 
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):     
                 done = True
+            # receiving moves with the mouse for DEBUG purposes.
             if event.type == MOUSEBUTTONDOWN:
                 position = [event.pos[0] // SQUARE_SIZE, 7 - event.pos[1] // SQUARE_SIZE]
                 if selected:
                     if position != origin_pos: 
+                        # lines and columns are numbered 1-8 in the subprocess and not 0-7,
+                        # hence the '+1' in the following orders.
                         moveChecker.send(str(origin_pos[0] + 1) + '\n')
                         moveChecker.send(str(origin_pos[1] + 1) + '\n')
                         moveChecker.send(str(position[0] + 1) + '\n')
@@ -169,4 +188,5 @@ def game():
         
     pygame.quit()
     
+# start the game
 game()
