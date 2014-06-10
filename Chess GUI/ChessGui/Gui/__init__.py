@@ -178,11 +178,13 @@ def game():
                         moveChecker.send(str(origin_pos[1] + 1) + '\n')
                         moveChecker.send(str(position[0] + 1) + '\n')
                         moveChecker.send(str(position[1] + 1) + '\n')
-                        index = moveChecker.expect(['Legal', 'Illegal'])
+                        index = moveChecker.expect(['Legal', 'Illegal', pexpect.EOF])
                         if index == 0:
                             move_piece(pieces, origin_pos, position)
                         elif index == 1:
                             print 'Illegal move!'
+                        elif index == 2:
+                            print 'Game ended'
                     selected = False   
                          
                 else:
