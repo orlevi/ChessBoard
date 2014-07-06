@@ -82,7 +82,7 @@ int main()
 		std::string moveString = makeAMove(board, color);
 		PGNFileStream << moveString;
 
-		board->displayBoard(); //print the board to the screen (for debug)
+		//board->displayBoard(); //print the board to the screen (for debug)
 
 		if (color == black)
 		{
@@ -97,7 +97,7 @@ int main()
 			PGNFileStream << "+";
 		}
 
-		board->showLegalMoves(color); //printing each piece options to the screen (for debug)
+		//board->showLegalMoves(color); //printing each piece options to the screen (for debug)
 	}
 
 	/* at this point there are no more legal moves, so the player whose turn it is is either losing or in a
