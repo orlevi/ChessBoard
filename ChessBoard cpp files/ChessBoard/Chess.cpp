@@ -1,5 +1,5 @@
 /*
- * try.cpp
+ * Chess.cpp
  *
  *  Created on: 21 במרץ 2014
  *      Author: Or
@@ -9,13 +9,14 @@
 #include <sstream>
 #include <fstream>
 
-void makeAMove(Board* board, pieceColor color, std::ofstream& PGNFileStream)
+std::string makeAMove(Board* board, pieceColor color)
 {
 	int originFile;
 	int originRank;
 	int destinationFile;
 	int destinationRank;
 	bool legalMove = false;
+	std::stringstream moveString;
 
 	while (!legalMove)
 	{
@@ -33,11 +34,11 @@ void makeAMove(Board* board, pieceColor color, std::ofstream& PGNFileStream)
 				int turnNumber = board->getCurrentTurn();
 				if (turnNumber != 1) // add a space before the number, but not before the first one.
 				{
-					PGNFileStream << " ";
+					moveString << " ";
 				}
-				PGNFileStream << turnNumber << ".";
+				moveString << turnNumber << ".";
 			}
-			PGNFileStream << " " << board->getMoveString(origin, destination) ;
+			moveString << " " << board->getMoveString(origin, destination) ;
 			board->makeMove(origin, destination);
 			std::cout << "Legal" << std::endl;
 		}
@@ -46,6 +47,7 @@ void makeAMove(Board* board, pieceColor color, std::ofstream& PGNFileStream)
 			std::cout << "Illegal" << std::endl;
 		}
 	}
+	return moveString.str();
 }
 
 
@@ -57,14 +59,19 @@ int main()
 	Board* board = new Board();
 	pieceColor color = white;
 
-	std::ofstream PGNFileStream; // creating the pgn file
+	/* creating the PGN file and adding the headers to the file. */
+
+	std::ofstream PGNFileStream;
 	PGNFileStream.open("try.pgn", std::ofstream::out | std::ofstream::app);
-	PGNFileStream << "[Event \"testing the program\"]" << std::endl;
+
+	//PGNFileStream << "[Event \"testing the program\"]" << std::endl;
 	PGNFileStream << "[Site  \"Jerusalem\"]" << std::endl;
 	PGNFileStream << "[Date \"2014.24.04\"]" << std::endl;
-	PGNFileStream << "[Round \"3\"]" << std::endl;
+	//PGNFileStream << "[Round \"3\"]" << std::endl;
 	PGNFileStream << "[White \"Or Levi\"]" << std::endl;
 	PGNFileStream << "[Black \"Or Levi\"]" << std::endl;
+
+	/* handling the new game */
 
 	int legalMoves = board->updateMoves(color);
 	bool inCheck;
@@ -72,9 +79,10 @@ int main()
 
 	while (legalMoves != 0)
 	{
-		makeAMove(board, color, PGNFileStream);
+		std::string moveString = makeAMove(board, color);
+		PGNFileStream << moveString;
 
-		//board->displayBoard();
+		board->displayBoard(); //print the board to the screen (for debug)
 
 		if (color == black)
 		{
@@ -89,11 +97,12 @@ int main()
 			PGNFileStream << "+";
 		}
 
-		//board->showLegalMoves(color); //printing each piece options to the screen
+		board->showLegalMoves(color); //printing each piece options to the screen (for debug)
 	}
 
 	/* at this point there are no more legal moves, so the player whose turn it is is either losing or in a
 	   stalemate */
+
 	std::string potentialWin = (color == white) ? "# 0-1" : "# 1-0";
 	/* if there is a check, it is mate, if not - stalemate. */
 	std::string result = inCheck ? potentialWin : " 1/2-1/2";
