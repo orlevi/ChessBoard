@@ -1,4 +1,5 @@
 import pexpect
+import serial
 import pygame, sys
 import Piece
 from pygame.locals import *
@@ -12,6 +13,9 @@ HEIGHT = 426
 WHITE = pygame.Color(255,255,255)
 SQUARE_SIZE = 53
 PIECE_SIZE = 49
+
+# game handling constants
+BYTES_TO_READ = 4
 
 # create the canvas
 canvas = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -150,6 +154,25 @@ def move_piece(pieces, origin, destination):
             elif piece.is_king and (destination[0] - origin[0]) == -2:
                 move_piece(pieces, [0 ,destination[1]],[destination[0] + 1, destination[1]])
             break
+        
+def check_move(move_checker, origin_file, origin_rank, dest_file, dest_rank):
+    """
+    checks if the move is legal, and if so calls 'move_piece' to do it, if not it should print
+    an appropriate message
+    """
+    move_checker.send(origin_file + '\n')
+    move_checker.send(origin_rank + '\n')
+    move_checker.send(dest_file + '\n')
+    move_checker.send(dest_rank + '\n')
+    index = move_checker.expect(['Legal', 'Illegal', pexpect.EOF])
+    if index == 0:
+        result = 'Legal move'
+    elif index == 1:
+        result = 'Illegal move!'
+    elif index == 2:
+        result = 'Game ended'
+    return result    
+    
 
 def game():
     """
@@ -157,8 +180,9 @@ def game():
     with the pexpect subprocess, and makes the moves on the board.
     """
     pieces = initialize_board()
-    moveChecker = pexpect.spawn('/home/pi/Desktop/Chess')
-    selected = False
+    move_checker = pexpect.spawn('/home/pi/Desktop/Chess')
+    serial_MCU = serial.Serial('/dev/ttyAMA0')
+    selected = False # is there a selected piece (in other words- first or second mouse click)
     origin_pos = [0, 0]
     done = False
     
@@ -168,29 +192,37 @@ def game():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):     
                 done = True
             # receiving moves with the mouse for DEBUG purposes.
-            if event.type == MOUSEBUTTONDOWN:
+            if event.type == MOUSEBUTTONDOWN: 
                 position = [event.pos[0] // SQUARE_SIZE, 7 - event.pos[1] // SQUARE_SIZE]
                 if selected:
                     if position != origin_pos: 
                         # lines and columns are numbered 1-8 in the subprocess and not 0-7,
-                        # hence the '+1' in the following orders.
-                        moveChecker.send(str(origin_pos[0] + 1) + '\n')
-                        moveChecker.send(str(origin_pos[1] + 1) + '\n')
-                        moveChecker.send(str(position[0] + 1) + '\n')
-                        moveChecker.send(str(position[1] + 1) + '\n')
-                        index = moveChecker.expect(['Legal', 'Illegal', pexpect.EOF])
-                        if index == 0:
+                        # hence the '+1' in the command parameters.
+                        result = check_move(move_checker, str(origin_pos[0] + 1), 
+                                            str(origin_pos[1] + 1), str(position[0] + 1), 
+                                            str(position[1] + 1))
+                        if result == 'Legal move':
                             move_piece(pieces, origin_pos, position)
-                        elif index == 1:
-                            print 'Illegal move!'
-                        elif index == 2:
-                            print 'Game ended'
-                    selected = False   
-                         
+                        else:
+                            print result
+                    selected = False          
                 else:
                     origin_pos = position
                     selected = True
-        
+        # receiving moves from the MCU
+        if serial_MCU.inWaiting() >= BYTES_TO_READ :
+            move = serial_MCU.read(BYTES_TO_READ)
+            result = check_move(move_checker, move[0], move[1], move[2], move[3])
+            if result == 'Legal move':
+                # MCU moves are in actual rank and file numbers (1-8 and not 0-7), hence the 
+                # minus 1 in the elements
+                origin = [int(move[0]) - 1, int(move[1]) - 1]
+                destination = [int(move[2]) - 1, int(move[3]) - 1]
+                move_piece(pieces, origin, destination)
+                #serial_MCU.write('0') # assert the MCU that the move is correct and was done
+            else:
+                print result
+                #serial_MCU.write('1') # tell the MCU that the move can't be done
         draw(pieces)
         
     pygame.quit()
