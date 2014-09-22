@@ -128,14 +128,16 @@ int main()
 	   stalemate */
 
 	/* if there is a check, it is mate, if not - stalemate. */
-	std::string result = inCheck ? "#" : "";
-	PGNFileStream << result << std::endl;
+	std::string result = inCheck ? "# " : "";
+	PGNFileStream << result;
 
-	/* updating the Result tag in the beginning of the PGN file*/
+	/* updating the Result tag in the beginning of the PGN file and the result in its end */
 	std::string potentialWin = (color == white) ? "0-1" : "1-0";
-	result = (inCheck ? potentialWin : "1/2-1/2") + "\"]";
+	result = (inCheck ? potentialWin : "1/2-1/2");
+	PGNFileStream << result << std::endl; //result in the end of the PGN file
+	result += "\"]";
 	PGNFileStream.seekp(resultPos); //setting the file position back to the result tag
-	PGNFileStream << result << std::endl;
+	PGNFileStream << result << std::endl; //updating the result in the result tab
 
 	/* writing to the PGN file is finished - closing the PGN file */
 	PGNFileStream.close();
