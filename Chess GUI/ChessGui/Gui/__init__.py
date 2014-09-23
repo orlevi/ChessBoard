@@ -180,7 +180,7 @@ def game():
     with the pexpect subprocess, and makes the moves on the board.
     """
     pieces = initialize_board()
-    move_checker = pexpect.spawn('/home/pi/Desktop/Chess')
+    move_checker = pexpect.spawn('/home/pi/Desktop/ChessBoard/ChessBoard\ cpp\ files/ChessBoard/Chess')
     serial_MCU = serial.Serial('/dev/ttyAMA0')
     selected = False # is there a selected piece (in other words- first or second mouse click)
     origin_pos = [0, 0]

@@ -80,7 +80,7 @@ int main()
 	/* creating the PGN file and adding the headers to the file. */
 
 	std::ofstream PGNFileStream;
-	PGNFileStream.open(fileName.c_str(), std::ofstream::out | std::ofstream::app);
+	PGNFileStream.open(fileName.c_str(), std::ofstream::out);
 
 	//PGNFileStream << "[Event \"testing the program\"]" << std::endl;
 	PGNFileStream << "[Site  \"Jerusalem\"]" << std::endl;
@@ -88,12 +88,12 @@ int main()
 	//PGNFileStream << "[Round \"3\"]" << std::endl;
 	PGNFileStream << "[White \"Or Levi\"]" << std::endl;
 	PGNFileStream << "[Black \"Or Levi\"]" << std::endl;
-	PGNFileStream << "[Result \"*\"]" << std::endl;
+	PGNFileStream << "[Result \"*\"]      " << std::endl;
 
 	/* saving the result position to update it when the game ends, the -4 is to "take back" the
 	   '*"]' in the end of the line as well as the end-line character.
 	 */
-	long resultPos = PGNFileStream.tellp() - 4;
+	unsigned long int resultPos = PGNFileStream.tellp() - 10;
 
 	/* handling the new game */
 
@@ -137,7 +137,7 @@ int main()
 	PGNFileStream << result << std::endl; //result in the end of the PGN file
 	result += "\"]";
 	PGNFileStream.seekp(resultPos); //setting the file position back to the result tag
-	PGNFileStream << result << std::endl; //updating the result in the result tab
+	PGNFileStream << result; //updating the result in the result tab
 
 	/* writing to the PGN file is finished - closing the PGN file */
 	PGNFileStream.close();
