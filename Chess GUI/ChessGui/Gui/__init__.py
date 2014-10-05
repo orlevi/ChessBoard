@@ -2,6 +2,7 @@ import pexpect
 import serial
 import pygame, sys
 import Piece
+import Game
 from pygame.locals import *
 
 pygame.init() # initialize pygame
@@ -10,151 +11,29 @@ fps_Clock = pygame.time.Clock() # set the FPS clock
 # size constants
 WIDTH = 426
 HEIGHT = 426
-WHITE = pygame.Color(255,255,255)
 SQUARE_SIZE = 53
-PIECE_SIZE = 49
 
 # game handling constants
-BYTES_TO_READ = 4
+BYTES_TO_READ = 3
+CORRECT_MOVE_LENGTH = 4
+WAIT_TO_MOVE = 30
+WHITE = pygame.Color(255,255,255)
+
+# game handling public vars
+wait_counter = 0
+wait_count = False
+illegal_move = False
+first_up = None
+second_up = None
+down = None
 
 # create the canvas
 canvas = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Chess')
-
-# helper lists and dictionaries 
-lines = [3 + (SQUARE_SIZE / 2) + SQUARE_SIZE * line for line in range(7, -1, -1)]
-cols = [3 + (SQUARE_SIZE / 2) + SQUARE_SIZE * col for col in range(8)]
-piece_colors = {'black' : 36, 'white' : 107}
-piece_type = {'king' : 37, 'queen' : 121, 'rook' : 204, 'bishop' : 289, 'knight' : 373, 'pawn' : 457}
-
-# load images
-pieces_image = pygame.image.load('chess_set_symbols.png')
-pieces_image = pygame.transform.scale(pieces_image, (482, 144))
-board_image = pygame.image.load('board.png')
-
-# create the pieces images (sprites) from the tiled ones
-w_k = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_k.blit(pieces_image, (0, 0), (piece_type['king'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_k.get_at((0,0))
-w_k.set_colorkey(colorkey, RLEACCEL)
-b_k = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_k.blit(pieces_image, (0, 0), (piece_type['king'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_k.get_at((0,0))
-b_k.set_colorkey(colorkey, RLEACCEL)
-w_q = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_q.blit(pieces_image, (0, 0), (piece_type['queen'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_q.get_at((0,0))
-w_q.set_colorkey(colorkey, RLEACCEL)
-b_q = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_q.blit(pieces_image, (0, 0), (piece_type['queen'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_q.get_at((0,0))
-b_q.set_colorkey(colorkey, RLEACCEL)
-w_r = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_r.blit(pieces_image, (0, 0), (piece_type['rook'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_r.get_at((0,0))
-w_r.set_colorkey(colorkey, RLEACCEL)
-b_r = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_r.blit(pieces_image, (0, 0), (piece_type['rook'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_r.get_at((0,0))
-b_r.set_colorkey(colorkey, RLEACCEL)
-w_b = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_b.blit(pieces_image, (0, 0), (piece_type['bishop'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_b.get_at((0,0))
-w_b.set_colorkey(colorkey, RLEACCEL)
-b_b = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_b.blit(pieces_image, (0, 0), (piece_type['bishop'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_b.get_at((0,0))
-b_b.set_colorkey(colorkey, RLEACCEL)
-w_n = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_n.blit(pieces_image, (0, 0), (piece_type['knight'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_n.get_at((0,0))
-w_n.set_colorkey(colorkey, RLEACCEL)
-b_n = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_n.blit(pieces_image, (0, 0), (piece_type['knight'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_n.get_at((0,0))
-b_n.set_colorkey(colorkey, RLEACCEL)
-w_p = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-w_p.blit(pieces_image, (0, 0), (piece_type['pawn'] - PIECE_SIZE / 2, piece_colors['white'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = w_p.get_at((0,0))
-w_p.set_colorkey(colorkey, RLEACCEL)
-b_p = pygame.Surface((PIECE_SIZE, PIECE_SIZE))
-b_p.blit(pieces_image, (0, 0), (piece_type['pawn'] - PIECE_SIZE / 2, piece_colors['black'] - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE))
-colorkey = b_p.get_at((0,0))
-b_p.set_colorkey(colorkey, RLEACCEL)
-
-def initialize_board():
-    """
-    places all 32 pieces in their initial positions.
-    """
-    pieces = []
-    pieces.append(Piece.Piece([cols[0], lines[0]], w_r))
-    pieces.append(Piece.Piece([cols[1], lines[0]], w_n))
-    pieces.append(Piece.Piece([cols[2], lines[0]], w_b))
-    pieces.append(Piece.Piece([cols[3], lines[0]], w_q))
-    pieces.append(Piece.Piece([cols[4], lines[0]], w_k, True))
-    pieces.append(Piece.Piece([cols[5], lines[0]], w_b))
-    pieces.append(Piece.Piece([cols[6], lines[0]], w_n))
-    pieces.append(Piece.Piece([cols[7], lines[0]], w_r))
-    pieces.append(Piece.Piece([cols[0], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[1], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[2], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[3], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[4], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[5], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[6], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[7], lines[1]], w_p))
-    pieces.append(Piece.Piece([cols[0], lines[7]], b_r))
-    pieces.append(Piece.Piece([cols[1], lines[7]], b_n))
-    pieces.append(Piece.Piece([cols[2], lines[7]], b_b))
-    pieces.append(Piece.Piece([cols[3], lines[7]], b_q))
-    pieces.append(Piece.Piece([cols[4], lines[7]], b_k, True))
-    pieces.append(Piece.Piece([cols[5], lines[7]], b_b))
-    pieces.append(Piece.Piece([cols[6], lines[7]], b_n))
-    pieces.append(Piece.Piece([cols[7], lines[7]], b_r))
-    pieces.append(Piece.Piece([cols[0], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[1], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[2], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[3], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[4], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[5], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[6], lines[6]], b_p))
-    pieces.append(Piece.Piece([cols[7], lines[6]], b_p))
-    return pieces;
-
-def draw(pieces):
-    """
-    draws the board and the pieces that are on it.
-    """
-    canvas.fill(WHITE)
-    canvas.blit(board_image, (0, 0))
         
-    for piece in pieces:
-        piece.draw(canvas)
-            
-    pygame.display.update()
-    fps_Clock.tick(60)
+# load illegal move image
+illegal_image = pygame.image.load('illegal.png')
 
-def move_piece(pieces, origin, destination):
-    """
-    changes the location of a piece on the board. this function should be called 
-    only after the move was checked and found legal.
-    """
-    for piece in pieces:
-        current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
-        if current == destination:
-            pieces.remove(piece)
-            break
-    for piece in pieces:
-        current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
-        if current == origin:
-            piece.pos = [cols[destination[0]], lines[destination[1]]]
-            # handle castling moves
-            if piece.is_king and (destination[0] - origin[0]) == 2:
-                move_piece(pieces, [7 ,destination[1]],[destination[0] - 1, destination[1]])
-            elif piece.is_king and (destination[0] - origin[0]) == -2:
-                move_piece(pieces, [0 ,destination[1]],[destination[0] + 1, destination[1]])
-            break
-        
 def check_move(move_checker, origin_file, origin_rank, dest_file, dest_rank):
     """
     checks if the move is legal, and if so calls 'move_piece' to do it, if not it should print
@@ -172,26 +51,58 @@ def check_move(move_checker, origin_file, origin_rank, dest_file, dest_rank):
     elif index == 2:
         result = 'Game ended'
     return result    
-    
+
+def move_from_change(change):
+    """
+    takes the change on the board (piece up or piece down) and converts it to a move (four 
+    charcters of numbers of origin and destination files and ranks).
+    """
+    global wait_count, wait_counter, first_up, second_up, down
+    move = []
+    if change[0] == 'U': # a piece was lifted from the board
+        if change[1:2] == down and wait_count: # dragging a piece on the board 
+            down = None
+            wait_counter = 0
+            wait_count = False 
+        elif first_up == None:
+            first_up = change[1:2]
+        elif second_up == None:
+            second_up = change[1:2]
+            ###################################################################################### handle too many pieces up
+    elif change[0] == 'D': # a piece was placed on the board
+        ################################################################## handle piece down with no pieces up
+        if second_up == None or second_up == change[1:2]:
+            down = change[1:2]
+            move.extend(first_up)
+            move.extend(down)
+            wait_count = True
+    else:
+        print "error in change recieved from MCU, first letter is not D or U"
+        
+    return move
 
 def game():
     """
     this function handles the game. it waits to receive a move, checks if it is legal 
     with the pexpect subprocess, and makes the moves on the board.
     """
-    pieces = initialize_board()
+    global wait_count, wait_counter
+    current_game = Game.Game()
     move_checker = pexpect.spawn('/home/pi/Desktop/ChessBoard/ChessBoard\ cpp\ files/ChessBoard/Chess')
-    serial_MCU = serial.Serial('/dev/ttyAMA0')
+    serial_MCU = serial.Serial('/dev/ttyAMA0') # UART communication with the MCU
     selected = False # is there a selected piece (in other words- first or second mouse click)
     origin_pos = [0, 0]
     done = False
+    illegal_move = False
     
     while not done:
         for event in pygame.event.get():
             # exit if ESC pressed or 'x' clicked. 
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):     
                 done = True
-            # receiving moves with the mouse for DEBUG purposes.
+            ######################################################
+            # receiving moves with the mouse for DEBUG purposes. #
+            ######################################################
             if event.type == MOUSEBUTTONDOWN: 
                 position = [event.pos[0] // SQUARE_SIZE, 7 - event.pos[1] // SQUARE_SIZE]
                 if selected:
@@ -202,28 +113,50 @@ def game():
                                             str(origin_pos[1] + 1), str(position[0] + 1), 
                                             str(position[1] + 1))
                         if result == 'Legal move':
-                            move_piece(pieces, origin_pos, position)
+                            current_game.move_piece(origin_pos, position)
+                            illegal_move = False
                         else:
                             print result
+                            illegal_move = True
                     selected = False          
                 else:
                     origin_pos = position
                     selected = True
-        # receiving moves from the MCU
+        ################################
+        # receiving moves from the MCU #
+        ################################
         if serial_MCU.inWaiting() >= BYTES_TO_READ :
-            move = serial_MCU.read(BYTES_TO_READ)
+            change = serial_MCU.read(BYTES_TO_READ) # get the change from the MCU 
+            move = move_from_change(change)
+        if wait_count and wait_counter < WAIT_TO_MOVE: # we are waiting to certify a move
+            wait_counter += 1
+        if wait_count and wait_counter == WAIT_TO_MOVE: # counting to certify the move is over. try the move. 
+            wait_count = False
+            wait_counter = 0
+            first_up = None
+            second_up = None
+            down = None
             result = check_move(move_checker, move[0], move[1], move[2], move[3])
             if result == 'Legal move':
                 # MCU moves are in actual rank and file numbers (1-8 and not 0-7), hence the 
                 # minus 1 in the elements
                 origin = [int(move[0]) - 1, int(move[1]) - 1]
                 destination = [int(move[2]) - 1, int(move[3]) - 1]
-                move_piece(pieces, origin, destination)
+                current_game.move_piece(origin, destination)
                 #serial_MCU.write('0') # assert the MCU that the move is correct and was done
+                illegal_move = False
             else:
                 print result
                 #serial_MCU.write('1') # tell the MCU that the move can't be done
-        draw(pieces)
+                illegal_move = True
+        
+        canvas.fill(WHITE)
+        current_game.draw(canvas)
+        if illegal_move:
+            canvas.blit(illegal_image, (HEIGHT / 2, WIDTH / 2))
+        
+        pygame.display.update()
+        fps_Clock.tick(60)
         
     pygame.quit()
     
