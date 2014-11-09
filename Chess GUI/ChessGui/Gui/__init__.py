@@ -12,6 +12,8 @@ fps_Clock = pygame.time.Clock() # set the FPS clock
 WIDTH = 426
 HEIGHT = 426
 SQUARE_SIZE = 53
+ILLEGAL_SIZE = 256
+
 
 # game handling constants
 BYTES_TO_READ = 3
@@ -153,7 +155,7 @@ def game():
         canvas.fill(WHITE)
         current_game.draw(canvas)
         if illegal_move:
-            canvas.blit(illegal_image, (HEIGHT / 2, WIDTH / 2))
+            canvas.blit(illegal_image, (HEIGHT / 2 - ILLEGAL_SIZE / 2 , WIDTH / 2 - ILLEGAL_SIZE / 2))
         
         pygame.display.update()
         fps_Clock.tick(60)

@@ -124,17 +124,17 @@ class Game():
         
         
     def draw(self, canvas):
-    ''' draw all the pieces on the board '''
+    	''' draw all the pieces on the board '''
         canvas.blit(board_image, (0, 0))
             
         for piece in self.pieces:
             piece.draw(canvas)
         
     def move_piece(self, origin, destination):
-    '''
-    changes the location of a piece on the board. this function should be called 
-    only after the move was checked and found legal.
-    '''
+    	'''
+    	changes the location of a piece on the board. this function should be called 
+    	only after the move was checked and found legal.
+    	'''
         for piece in self.pieces:
             current = [piece.pos[0] // SQUARE_SIZE , 7 - piece.pos[1] // SQUARE_SIZE]
             if current == destination:
